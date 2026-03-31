@@ -27,7 +27,7 @@ export default function Sidebar({ activePage, setActivePage, featureState, setFe
     if (activePage === 'fabric_audit') {
       const navItems = []
       
-      if (featureState === 'query' || featureState === 'portal' || !featureState) {
+      if (featureState === 'query' || !featureState) {
         navItems.push({ id: 'query', label: 'Query Mode', icon: List, action: () => setFeatureState('query') })
         navItems.push({ id: 'execution', label: 'Execution Mode', icon: Play, action: () => setFeatureState('execution') })
       } else if (featureState === 'execution') {

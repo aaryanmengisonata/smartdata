@@ -51,8 +51,8 @@ const features = [
 export default function Dashboard({ setActivePage, featureState, setFeatureState }) {
   const handleFeatureSelect = (id) => {
     const map = { api: 'run', etl: 'run', fabric: 'fabric_audit', source_target: 'reports', test_cases: 'test_cases' }
-    // Reset feature state to portal when navigating from home
-    setFeatureState('portal')
+    // Reset feature state when navigating from home
+    setFeatureState('')
     setActivePage(map[id] || 'dashboard')
   }
 

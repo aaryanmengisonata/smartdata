@@ -5,7 +5,7 @@ const AppContext = createContext();
 export function AppProvider({ children }) {
   const [activePage, setActivePage] = useState('dashboard');
   const [navParams, setNavParams] = useState({});
-  const [featureState, setFeatureState] = useState('portal');
+  const [featureState, setFeatureState] = useState('');
 
   // Helper function to easily navigate with parameters
   const navigate = (page, params = {}) => {

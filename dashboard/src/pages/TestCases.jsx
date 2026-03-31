@@ -142,7 +142,7 @@ export default function TestCases() {
                <FileSpreadsheet size={14} /> Repository Active
             </div>
             <div className="space-y-1">
-              <h1 className="text-2xl font-black uppercase tracking-tight text-slate-900">Test Case Portal</h1>
+              <h1 className="text-2xl font-black uppercase tracking-tight text-slate-900">Test Cases</h1>
               <p className="text-xs font-bold text-slate-400 max-w-xl">
                  Manage Data validation mappings, source-to-target reconciliation logic, and metadata quality rules within a unified framework.
               </p>

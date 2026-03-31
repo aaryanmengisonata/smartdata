@@ -123,30 +123,7 @@ export default function FabricAudit({ setActivePage, setNavParams, featureState,
     a.click()
   }
 
-  // --- RENDER PORTAL MODE ---
-  if (featureState === 'portal' || !featureState) {
-    return (
-      <div className="h-full flex flex-col items-center justify-center animate-in fade-in zoom-in duration-1000 p-8">
-        <div className="p-10 rounded-[3rem] border backdrop-blur-md shadow-2xl text-center max-w-xl transition-all bg-white/60 border-slate-100 shadow-slate-200/40">
-          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-600 to-purple-600 flex items-center justify-center shadow-xl mx-auto mb-8">
-             <Sparkles className="text-white" size={32} />
-          </div>
-          <h1 className="text-2xl font-black tracking-tight mb-3 text-slate-900">
-            Welcome to <span className="text-blue-500">Smart Data</span>
-          </h1>
-          <p className="text-[11px] font-bold leading-relaxed tracking-wide opacity-50 mb-4 text-slate-600">
-            Sonata Software's Premium Data Validation Platform. <br />
-            Select a mode from the sidebar to begin.
-          </p>
-          <div className="h-px w-12 bg-blue-500/20 mx-auto" />
-          <p className="mt-6 text-[8px] font-black uppercase tracking-[0.4em] opacity-20">
-            Precision • Integrity
-          </p>
-        </div>
-      </div>
-    )
-  }
-
+ 
   // --- RENDER QUERY MODE ---
   if (currentMode === 'query') {
     return (

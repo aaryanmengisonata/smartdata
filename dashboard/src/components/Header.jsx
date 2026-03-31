@@ -2,7 +2,7 @@ import React from 'react'
 import { Bell, RefreshCw, Layers, Sun, Moon, User } from 'lucide-react'
 
 const pageTitles = {
-  dashboard: { title: 'Feature Portal', subtitle: 'Select a validation feature to begin' },
+  dashboard: { title: 'Dashboard', subtitle: 'Select a validation feature to begin' },
   test_cases: { title: 'Test Case Definition', subtitle: 'Define and manage CSV/Excel test skeletons' },
   run: { title: 'Execution Engine', subtitle: 'Trigger automated validations and stream terminal output' },
   reports: { title: 'Report Management', subtitle: 'Audit historical runs and compare results' },
