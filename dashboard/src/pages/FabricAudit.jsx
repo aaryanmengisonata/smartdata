@@ -155,6 +155,34 @@ export default function FabricAudit({ setActivePage, setNavParams, featureState,
           </div>
         </div>
 
+        {/* Fabric Validation Welcome Card */}
+        <div className="px-4 mb-6 shrink-0">
+           <div className="w-full flex items-center justify-between p-6 rounded-[2rem] bg-gradient-to-br from-indigo-600 to-blue-600 text-white shadow-xl shadow-blue-500/20 relative overflow-hidden">
+               <div className="absolute -right-20 -top-20 w-64 h-64 rounded-full bg-white/10 blur-3xl"></div>
+               
+               <div className="relative z-10 flex gap-6 items-center">
+                   <div className="w-16 h-16 rounded-2xl bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/20 shadow-inner">
+                       <Sparkles size={32} className="text-white drop-shadow-md" />
+                   </div>
+                   <div>
+                       <h2 className="text-xl font-black mb-1 tracking-tight shadow-sm">Fabric Validation Engine</h2>
+                       <p className="text-[11px] font-bold text-blue-100 max-w-2xl leading-relaxed">
+                           Welcome to the high-performance AI-driven validation core. Construct intelligent queries or seamlessly execute large-scale data reconciliations across Bronze, Silver, and Gold delta layers right from this workspace.
+                       </p>
+                   </div>
+               </div>
+               
+               <div className="relative z-10 hidden lg:flex flex-col items-end">
+                   <span className="px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-500/30 text-[9px] font-black uppercase tracking-widest text-emerald-100 backdrop-blur-sm mb-2 shadow-sm">
+                      System Online
+                   </span>
+                   <span className="text-[10px] uppercase font-bold text-blue-200 tracking-widest opacity-80">
+                      Query Mode
+                   </span>
+               </div>
+           </div>
+        </div>
+
         {/* Primary Workspace */}
         <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-8 px-4 pb-4 overflow-hidden">
            {/* Section 1: Requirement Prompt */}
