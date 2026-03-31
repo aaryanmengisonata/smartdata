@@ -1,4 +1,5 @@
-import React, { useState } from 'react'
+import React from 'react'
+import { useAppContext } from './store/AppContext'
 import Sidebar from './components/Sidebar'
 import Header from './components/Header'
 import Dashboard from './pages/Dashboard'
@@ -13,9 +14,11 @@ import Welcome from './pages/Welcome'
 import Footer from './components/shared/Footer'
 
 export default function App() {
-  const [activePage, setActivePage] = useState('dashboard')
-  const [navParams, setNavParams] = useState({})
-  const [featureState, setFeatureState] = useState('portal')
+  const { 
+    activePage, setActivePage, 
+    navParams, setNavParams, 
+    featureState, setFeatureState 
+  } = useAppContext()
 
   const pages = {
     dashboard: <Dashboard setActivePage={setActivePage} />,
