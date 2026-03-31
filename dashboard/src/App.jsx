@@ -1,7 +1,6 @@
 import React from 'react'
 import { useAppContext } from './store/AppContext'
 import Sidebar from './components/Sidebar'
-import Header from './components/Header'
 import Dashboard from './pages/Dashboard'
 import RunTests from './pages/RunTests'
 import Reports from './pages/Reports'
@@ -39,7 +38,6 @@ export default function App() {
         <Sidebar activePage={activePage} setActivePage={setActivePage} featureState={featureState} setFeatureState={setFeatureState} />
       )}
       <div className="flex flex-col flex-1 overflow-hidden">
-        <Header activePage={activePage} />
         <main className={`flex-1 overflow-y-auto bg-white ${activePage === 'dashboard' ? 'p-0 pb-10' : (activePage === 'welcome' ? 'p-0 pb-10' : 'p-6 pb-16')}`}>
           {React.cloneElement(currentPage, { featureState, setFeatureState })}
         </main>
