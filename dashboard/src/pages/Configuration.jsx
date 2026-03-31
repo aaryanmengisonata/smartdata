@@ -3,6 +3,7 @@ import {
   Database, Layers, Globe, Settings, Save, Lock, Eye, EyeOff, 
   Loader2, CheckCircle, CloudUpload, Wifi, Info, ChevronLeft
 } from 'lucide-react'
+import { api } from '../services/api'
 
 export default function Configuration({ navParams, setActivePage, setFeatureState }) {
   const [config, setConfig] = useState({})
@@ -12,8 +13,7 @@ export default function Configuration({ navParams, setActivePage, setFeatureStat
   const [activeTab, setActiveTab] = useState('db')
 
   useEffect(() => {
-    fetch('http://localhost:8000/api/config')
-      .then(res => res.json())
+    api.get('/api/config')
       .then(data => {
         setConfig(data); setLoading(false)
       })
@@ -29,10 +29,7 @@ export default function Configuration({ navParams, setActivePage, setFeatureStat
 
   const handleSave = async () => {
     setSaving(true)
-    await fetch('http://localhost:8000/api/config', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(config)
-    })
+    await api.post('/api/config', config)
     setSaving(false); setSaved(true); 
     setTimeout(() => {
       setSaved(false)
