@@ -74,12 +74,12 @@ export default function Sidebar({ activePage, setActivePage, featureState, setFe
 }
 
 function FeatureToggle({ featureState, setFeatureState }) {
-  const isQuery = featureState === 'query' || !featureState;
+  const isIntro = !featureState || featureState === 'intro';
+  const isQuery = featureState === 'query';
   
-  // The button indicates the TARGET mode (the alternate option)
-  const targetMode = isQuery ? 'execution' : 'query';
-  const label = isQuery ? 'Execution Mode' : 'Query Mode';
-  const Icon = isQuery ? Play : List;
+  const targetMode = isIntro ? 'query' : (isQuery ? 'execution' : 'query');
+  const label = isIntro ? 'Query Mode' : (isQuery ? 'Execution Mode' : 'Query Mode');
+  const Icon = isIntro ? List : (isQuery ? Play : List);
 
   return (
     <div className="relative group perspective-1000">

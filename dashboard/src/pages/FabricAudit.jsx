@@ -28,7 +28,7 @@ export default function FabricAudit({ setActivePage, setNavParams, featureState,
   const [isComplete, setIsComplete] = useState(false)
   const [reportData, setReportData] = useState(null)
 
-  const currentMode = (featureState === 'workspace' || !featureState || featureState === 'query') ? 'query' : featureState
+  const currentMode = (!featureState || featureState === 'intro') ? 'intro' : featureState
 
   // --- LLM LOGIC ---
   const handleGenerateQuery = () => {
@@ -124,6 +124,29 @@ export default function FabricAudit({ setActivePage, setNavParams, featureState,
   }
 
  
+  // --- RENDER INTRO MODE ---
+  if (currentMode === 'intro') {
+    return (
+      <div className="h-full flex flex-col items-center justify-center animate-in fade-in zoom-in duration-700 p-8">
+         <div className="w-full max-w-3xl flex flex-col items-center text-center p-12 rounded-[3rem] bg-gradient-to-br from-indigo-600 to-blue-600 text-white shadow-2xl shadow-blue-500/20 relative overflow-hidden">
+             <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
+             <div className="absolute -right-20 -top-20 w-64 h-64 rounded-full bg-white/10 blur-3xl"></div>
+             
+             <div className="relative z-10 w-24 h-24 rounded-[2rem] bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/20 shadow-inner mb-8">
+                 <Sparkles size={48} className="text-white drop-shadow-md" />
+             </div>
+             
+             <h1 className="relative z-10 text-4xl font-black mb-4 tracking-tight shadow-sm">Fabric Validation Engine</h1>
+             <p className="relative z-10 text-sm font-bold text-blue-100 max-w-2xl leading-relaxed">
+                 Welcome to the high-performance AI-driven validation core. Construct intelligent queries or seamlessly execute large-scale data reconciliations across Bronze, Silver, and Gold delta layers.
+                 <br/><br/>
+                 Use the sidebar toggle to select your desired mode and begin your session.
+             </p>
+         </div>
+      </div>
+    )
+  }
+
   // --- RENDER QUERY MODE ---
   if (currentMode === 'query') {
     return (
@@ -153,34 +176,6 @@ export default function FabricAudit({ setActivePage, setNavParams, featureState,
                 <Settings size={14} className="text-blue-500" /> Settings
             </button>
           </div>
-        </div>
-
-        {/* Fabric Validation Welcome Card */}
-        <div className="px-4 mb-6 shrink-0">
-           <div className="w-full flex items-center justify-between p-6 rounded-[2rem] bg-gradient-to-br from-indigo-600 to-blue-600 text-white shadow-xl shadow-blue-500/20 relative overflow-hidden">
-               <div className="absolute -right-20 -top-20 w-64 h-64 rounded-full bg-white/10 blur-3xl"></div>
-               
-               <div className="relative z-10 flex gap-6 items-center">
-                   <div className="w-16 h-16 rounded-2xl bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/20 shadow-inner">
-                       <Sparkles size={32} className="text-white drop-shadow-md" />
-                   </div>
-                   <div>
-                       <h2 className="text-xl font-black mb-1 tracking-tight shadow-sm">Fabric Validation Engine</h2>
-                       <p className="text-[11px] font-bold text-blue-100 max-w-2xl leading-relaxed">
-                           Welcome to the high-performance AI-driven validation core. Construct intelligent queries or seamlessly execute large-scale data reconciliations across Bronze, Silver, and Gold delta layers right from this workspace.
-                       </p>
-                   </div>
-               </div>
-               
-               <div className="relative z-10 hidden lg:flex flex-col items-end">
-                   <span className="px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-500/30 text-[9px] font-black uppercase tracking-widest text-emerald-100 backdrop-blur-sm mb-2 shadow-sm">
-                      System Online
-                   </span>
-                   <span className="text-[10px] uppercase font-bold text-blue-200 tracking-widest opacity-80">
-                      Query Mode
-                   </span>
-               </div>
-           </div>
         </div>
 
         {/* Primary Workspace */}
