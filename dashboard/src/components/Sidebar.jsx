@@ -8,8 +8,14 @@ import {
   FlaskConical,
   ChevronRight,
   Database,
-  List
+  List,
+  CloudUpload,
+  Zap,
+  RefreshCw,
+  Undo2,
+  ChevronDown
 } from 'lucide-react'
+import { useAppContext } from '../store/AppContext'
 
 const globalNav = [
   { id: 'configuration', label: 'Master Configuration', icon: Settings },
@@ -74,36 +80,104 @@ export default function Sidebar({ activePage, setActivePage, featureState, setFe
 }
 
 function FeatureToggle({ featureState, setFeatureState }) {
+  const { 
+    isRunning, toggleExecution, 
+    selectedDataset, setSelectedDataset, 
+    uploadedFile, handleFileUpload,
+    isComplete, reportData 
+  } = useAppContext();
+
   const isIntro = !featureState || featureState === 'intro';
   const isQuery = featureState === 'query';
-  
-  const targetMode = isIntro ? 'query' : (isQuery ? 'execution' : 'query');
-  const label = isIntro ? 'Query Mode' : (isQuery ? 'Execution Mode' : 'Query Mode');
-  const Icon = isIntro ? List : (isQuery ? Play : List);
+  const isExecution = featureState === 'execution';
+
+  const modes = [
+    { id: 'query', label: 'Query Mode', icon: List, visible: isIntro || isExecution },
+    { id: 'execution', label: 'Execution Mode', icon: Play, visible: isIntro || isQuery },
+  ]
 
   return (
-    <div className="relative group perspective-1000">
-      <button
-        onClick={() => setFeatureState(targetMode)}
-        className="w-full flex items-center justify-between px-4 py-3 rounded-xl bg-blue-600 text-white shadow-lg shadow-blue-500/20 active:scale-95 transition-all duration-500 group overflow-hidden relative isolate"
-      >
-        {/* Animated Background Overlay */}
-        <div className="absolute inset-x-0 bottom-0 h-0 bg-white/10 group-hover:h-full transition-all duration-500 -z-10" />
-        
-        <div className="flex items-center gap-3">
-          <Icon size={16} className="text-white transform group-hover:scale-110 group-hover:rotate-6 transition-all duration-300" />
-          {/* We use a key trick here to re-animate the text completely when the label changes */}
-          <span key={label} className="text-xs font-black uppercase tracking-widest animate-in slide-in-from-bottom-2 fade-in duration-300">
-            {label}
-          </span>
-        </div>
-        <ChevronRight size={14} className="opacity-50 group-hover:opacity-100 group-hover:translate-x-1 transition-all duration-300" />
-      </button>
-      
-      {/* Small subtle help text underneath */}
-      <p className="text-[8px] font-bold uppercase tracking-widest text-slate-400 text-center mt-3 opacity-60">
-        Currently in <span className="text-blue-500">{isQuery ? 'Query' : 'Execution'} Mode</span>
-      </p>
+    <div className="space-y-4">
+      <div className="px-4 py-2">
+        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 opacity-60">Module Workspace</p>
+      </div>
+      <div className="space-y-2">
+        {modes.filter(m => m.visible).map((mode) => {
+          const isActive = featureState === mode.id || (mode.id === 'query' && isIntro)
+          const Icon = mode.icon
+          
+          return (
+            <React.Fragment key={mode.id}>
+              <button
+                onClick={() => setFeatureState(mode.id)}
+                className={`w-full flex items-center justify-between px-4 py-3 rounded-xl transition-all duration-300 group ${
+                  isActive
+                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20'
+                    : 'text-slate-400 hover:bg-slate-50 hover:text-slate-900'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <Icon size={16} className={isActive ? 'text-white' : 'opacity-40 group-hover:opacity-100'} />
+                  <span className="text-xs font-black uppercase tracking-widest">
+                    {mode.label}
+                  </span>
+                </div>
+                {isActive && <ChevronRight size={14} className="opacity-50" />}
+              </button>
+
+              {/* Audit Configuration: Only visible under Query Mode button in Execution Mode */}
+              {mode.id === 'query' && isExecution && (
+                <div className="mx-2 mt-4 p-4 rounded-2xl bg-slate-50 border border-slate-100 space-y-4 animate-in slide-in-from-top-2 duration-300">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 opacity-60">Audit Config</p>
+                  
+                  {/* Dataset Selector */}
+                  <div className="space-y-1.5">
+                    <label className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Data Layer</label>
+                    <div className="relative">
+                      <select
+                        value={selectedDataset}
+                        onChange={(e) => setSelectedDataset(e.target.value)}
+                        className="w-full appearance-none text-[11px] font-bold text-slate-700 bg-white border border-slate-200 rounded-lg px-2 py-2 pr-7 outline-none focus:border-blue-400 transition-all cursor-pointer"
+                      >
+                        <option value="bronze_silver">Bronze → Silver</option>
+                        <option value="silver_gold">Silver → Gold</option>
+                        {uploadedFile && (
+                          <option value={uploadedFile.name}>{uploadedFile.name} (Uploaded)</option>
+                        )}
+                        <option value="custom">Custom Setup</option>
+                      </select>
+                      <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={12} />
+                    </div>
+                  </div>
+
+                  {/* File Upload */}
+                  <div className="space-y-1.5">
+                    <label className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Source File</label>
+                    <label className={`flex items-center gap-2 cursor-pointer p-2 rounded-lg border transition-all ${uploadedFile ? 'border-emerald-200 bg-emerald-50/50' : 'border-slate-200 bg-white hover:border-blue-300'}`}>
+                      <input type="file" className="hidden" accept=".csv" onChange={handleFileUpload} />
+                      <CloudUpload size={14} className={uploadedFile ? 'text-emerald-600' : 'text-slate-400'} />
+                      <span className="text-[10px] font-bold text-slate-600 truncate">{uploadedFile ? uploadedFile.name : 'Upload CSV'}</span>
+                    </label>
+                  </div>
+
+                  {/* Execution Button */}
+                  <div className="pt-2">
+                    <button
+                      onClick={toggleExecution}
+                      className={`w-full py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all active:scale-[0.98] ${isRunning
+                        ? 'bg-rose-500 hover:bg-rose-600 text-white shadow-lg shadow-rose-500/20'
+                        : 'bg-slate-900 hover:bg-black text-white shadow-lg shadow-slate-900/20'
+                      }`}
+                    >
+                      {isRunning ? <><RefreshCw size={12} className="animate-spin" /> Stop</> : <><Zap size={12} /> Run Audit</>}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </React.Fragment>
+          )
+        })}
+      </div>
     </div>
   )
 }

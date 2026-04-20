@@ -41,8 +41,8 @@ export default function Configuration({ navParams, setActivePage, setFeatureStat
         const imported = file.name.endsWith('.json')
           ? JSON.parse(content)
           : Object.fromEntries(
-              content.split('\n').map(l => l.split('=')).filter(p => p.length === 2).map(([k, v]) => [k.trim().toUpperCase(), v.trim()])
-            )
+            content.split('\n').map(l => l.split('=')).filter(p => p.length === 2).map(([k, v]) => [k.trim().toUpperCase(), v.trim()])
+          )
         setConfig(prev => ({ ...prev, ...imported }))
       } catch (err) { alert("Invalid file") }
     }
@@ -157,15 +157,14 @@ export default function Configuration({ navParams, setActivePage, setFeatureStat
               <button
                 onClick={handleSave}
                 disabled={saving}
-                className={`px-12 py-4 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] text-white transition-all duration-300 transform active:scale-95 shadow-xl ${
-                  saving ? 'bg-slate-700' :
+                className={`px-12 py-4 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] text-white transition-all duration-300 transform active:scale-95 shadow-xl ${saving ? 'bg-slate-700' :
                   saved ? 'bg-emerald-600 shadow-emerald-500/20' :
-                  'bg-blue-600 hover:bg-blue-700 shadow-blue-500/20'
-                }`}
+                    'bg-blue-600 hover:bg-blue-700 shadow-blue-500/20'
+                  }`}
               >
                 {saving ? <span className="flex items-center gap-2"><Loader2 size={12} className="animate-spin" /> Saving...</span>
                   : saved ? <span className="flex items-center gap-2"><CheckCircle size={12} /> Saved</span>
-                  : 'Save'}
+                    : 'Save'}
               </button>
             </div>
 
