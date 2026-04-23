@@ -5,12 +5,18 @@ import {
    FileText, ChevronRight,
    Sparkles, MessageSquare, Cpu,
    CloudUpload, ArrowRight, Zap,
-   Database, RefreshCw, Activity,
+   Database, RefreshCw, Activity, Layers,
    Terminal as TerminalIcon, PlusCircle,
    Undo2, AlertCircle, CheckCircle as CheckCircleIcon,
    ChevronDown
 } from 'lucide-react'
 import Terminal from '../components/shared/Terminal'
+
+// Query Builder Components
+import QueryHeader from '../components/features/query-builder/Header'
+import InputPanel from '../components/features/query-builder/InputPanel'
+import OutputPanel from '../components/features/query-builder/OutputPanel'
+import HistoryDrawer from '../components/features/query-builder/HistoryDrawer'
 
 export default function FabricAudit({ setActivePage, setNavParams, featureState, setFeatureState }) {
    const {
@@ -19,6 +25,7 @@ export default function FabricAudit({ setActivePage, setNavParams, featureState,
       reportData, setReportData,
       gridColumns, gridData,
       updateGridCell, addGridRow, deleteGridRow,
+      addGridColumn, deleteGridColumn,
       toggleExecution, handleFileUpload
    } = useAppContext()
 
@@ -27,6 +34,17 @@ export default function FabricAudit({ setActivePage, setNavParams, featureState,
    const [queryBuffer, setQueryBuffer] = useState('')
    const [isLlmLoading, setIsLlmLoading] = useState(false)
    const [saveStatus, setSaveStatus] = useState('idle') // 'idle', 'saving', 'saved'
+   
+   // History State
+   const [history, setHistory] = useState(() => {
+      const saved = localStorage.getItem('query_history');
+      return saved ? JSON.parse(saved) : [];
+   });
+   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+
+   useEffect(() => {
+      localStorage.setItem('query_history', JSON.stringify(history));
+   }, [history]);
 
    const currentMode = (!featureState || featureState === 'intro') ? 'intro' : featureState
 
@@ -43,10 +61,36 @@ export default function FabricAudit({ setActivePage, setNavParams, featureState,
          } else {
             result = `-- Improved Query based on: ${prompt}\n${queryBuffer}\n-- Optimization: Added index hint and schema mapping for Fabric Lakehouse.`
          }
+         
          setQueryBuffer(result)
          setIsLlmLoading(false)
+
+         // Add to history
+         const newItem = {
+            id: Date.now(),
+            prompt: prompt,
+            query: result,
+            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + ', ' + new Date().toLocaleDateString([], { month: 'short', day: 'numeric' })
+         };
+         setHistory(prev => [newItem, ...prev].slice(0, 20));
       }, 1500)
    }
+
+   const handleRestoreHistory = (item) => {
+      setPrompt(item.prompt);
+      setQueryBuffer(item.query);
+      setIsHistoryOpen(false);
+   };
+
+   const handleDeleteHistory = (id) => {
+      setHistory(prev => prev.filter(item => item.id !== id));
+   };
+
+   const handleClearHistory = () => {
+      if (window.confirm('Are you sure you want to clear all history?')) {
+         setHistory([]);
+      }
+   };
 
 
    const openSettings = () => {
@@ -79,20 +123,7 @@ export default function FabricAudit({ setActivePage, setNavParams, featureState,
    if (currentMode === 'intro') {
       return (
          <div className="w-full flex flex-col p-8 lg:p-12 animate-in fade-in duration-700 bg-slate-50/30">
-            <div className="max-w-5xl mx-auto w-full">
-
-               {/* Minimalist Top Banner */}
-               <div className="w-full flex items-center justify-between mb-8">
-                  <div>
-                     <h1 className="text-2xl font-black tracking-tight text-slate-900 border-l-4 border-blue-600 pl-4 py-1">
-                        Fabric Validation Engine
-                     </h1>
-                     <p className="text-[11px] font-bold text-slate-400 mt-2 pl-5 uppercase tracking-widest">
-                        Enterprise Data Auditing Platform
-                     </p>
-                  </div>
-               </div>
-
+            <div className="max-w-5xl mx-auto w-full pt-4">
                {/* Core Bento Overview */}
                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
                   {/* Main Description */}
@@ -148,81 +179,39 @@ export default function FabricAudit({ setActivePage, setNavParams, featureState,
    // --- RENDER QUERY MODE ---
    if (currentMode === 'query') {
       return (
-         <div className="w-full flex flex-col animate-in fade-in duration-700 p-2">
-            {/* Header */}
-            <div className="flex items-center justify-between mb-8 px-4">
-               <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-purple-600/10 flex items-center justify-center border border-purple-500/20 shadow-sm">
-                     <Sparkles className="text-purple-600" size={20} />
-                  </div>
-                  <div>
-                     <h1 className="text-xl font-black tracking-tight uppercase">Query Builder</h1>
-                     <p className="text-[10px] font-bold uppercase tracking-widest opacity-40">AI-Powered Logic Generation</p>
-                  </div>
+         <div className="w-full h-full flex flex-col bg-gradient-to-br from-slate-50 to-slate-100 animate-in fade-in duration-700">
+            <div className="flex-1 flex gap-8 p-8 overflow-hidden">
+               {/* Left Panel: Input (50%) */}
+               <div className="w-1/2 h-full">
+                  <InputPanel 
+                     prompt={prompt} 
+                     setPrompt={setPrompt} 
+                     onGenerate={handleGenerateQuery} 
+                     isLoading={isLlmLoading} 
+                  />
                </div>
-               <div className="flex gap-3">
-                  {/* Internal Settings button removed */}
+
+               {/* Right Panel: Logic Workspace (50%) */}
+               <div className="w-1/2 h-full">
+                  <OutputPanel 
+                     query={queryBuffer} 
+                     setQuery={setQueryBuffer}
+                     onExplain={() => {}} 
+                     onRefine={() => {}} 
+                     onRun={toggleExecution} 
+                     onFormat={() => {}}
+                  />
                </div>
             </div>
 
-            {/* Primary Workspace */}
-            <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-8 px-4 pb-4 overflow-hidden">
-               {/* Section 1: Requirement Prompt */}
-               <div className="flex flex-col rounded-[2.5rem] border overflow-hidden shadow-2xl transition-all bg-white border-slate-200">
-                  <div className="px-8 py-6 border-b flex items-center justify-between bg-slate-500/5">
-                     <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-purple-500/10 flex items-center justify-center">
-                           <MessageSquare size={14} className="text-purple-500" />
-                        </div>
-                        <span className="text-[10px] font-black uppercase tracking-[0.2em] opacity-60">Requirement Prompt</span>
-                     </div>
-                  </div>
-                  <textarea
-                     value={prompt}
-                     onChange={(e) => setPrompt(e.target.value)}
-                     placeholder="Ex: Generate a SQL query to compare row counts between Bronze and Silver layers for the 'Orders' table..."
-                     className="flex-1 p-10 bg-transparent outline-none resize-none text-base font-medium leading-relaxed placeholder:opacity-20 text-slate-800"
-                  />
-                  <div className="p-8 border-t border-dashed border-slate-500/10">
-                     <button
-                        onClick={handleGenerateQuery}
-                        disabled={isLlmLoading || !prompt.trim()}
-                        className="w-full py-4 rounded-2xl bg-gradient-to-r from-purple-600 to-indigo-600 text-white flex items-center justify-center gap-4 text-xs font-black uppercase tracking-[0.2em] hover:shadow-2xl hover:shadow-purple-500/30 active:scale-[0.98] transition-all disabled:opacity-40 disabled:grayscale"
-                     >
-                        {isLlmLoading ? <RefreshCw className="animate-spin" size={18} /> : <Zap size={18} className="fill-white/20" />}
-                        {isLlmLoading ? 'Processing Intelligence...' : 'Generate / Fix Query'}
-                     </button>
-                  </div>
-               </div>
-
-               {/* Section 2: Query Result / Buffer */}
-               <div className="flex flex-col rounded-[2.5rem] border overflow-hidden shadow-2xl transition-all bg-slate-50 border-slate-200 shadow-inner">
-                  <div className="px-8 py-6 border-b flex items-center justify-between bg-slate-500/5">
-                     <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-emerald-500/10 flex items-center justify-center">
-                           <Cpu size={14} className="text-emerald-500" />
-                        </div>
-                        <span className="text-[10px] font-black uppercase tracking-[0.2em] opacity-60">Logic Workspace</span>
-                     </div>
-                  </div>
-                  <textarea
-                     value={queryBuffer}
-                     onChange={(e) => setQueryBuffer(e.target.value)}
-                     placeholder="The generated query will appear here. You can also paste your own query for the AI to fix."
-                     className="flex-1 p-10 bg-transparent outline-none resize-none text-xs font-mono leading-relaxed placeholder:opacity-20 text-slate-600"
-                  />
-                  <div className="p-8 border-t border-dashed border-slate-500/10 flex items-center justify-between">
-                     <p className="text-[9px] font-bold uppercase tracking-widest opacity-30 italic">
-                        Note: Output acts as input for correction cycle
-                     </p>
-                     <div className="flex gap-2">
-                        <button className="p-3 rounded-xl bg-slate-500/10 hover:bg-slate-500/20 transition-all opacity-40 hover:opacity-100">
-                           <Undo2 size={16} />
-                        </button>
-                     </div>
-                  </div>
-               </div>
-            </div>
+            <HistoryDrawer 
+               isOpen={isHistoryOpen}
+               onClose={() => setIsHistoryOpen(false)}
+               history={history}
+               onRestore={handleRestoreHistory}
+               onDelete={handleDeleteHistory}
+               onClearAll={handleClearHistory}
+            />
          </div>
       )
    }
@@ -255,6 +244,20 @@ export default function FabricAudit({ setActivePage, setNavParams, featureState,
                         </div>
                      </div>
                      <div className="flex items-center gap-2">
+                        <button 
+                           onClick={() => addGridColumn()}
+                           className="h-9 px-4 rounded-lg text-xs font-semibold flex items-center gap-2 transition-all border border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300"
+                        >
+                           <Layers size={14} className="text-blue-500" />
+                           Add Column
+                        </button>
+                        <button 
+                           onClick={addGridRow}
+                           className="h-9 px-4 rounded-lg text-xs font-semibold flex items-center gap-2 transition-all border border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300"
+                        >
+                           <PlusCircle size={14} className="text-emerald-500" />
+                           Add Record
+                        </button>
                         <button 
                            onClick={handleSave}
                            disabled={saveStatus === 'saving'}
@@ -294,28 +297,36 @@ export default function FabricAudit({ setActivePage, setNavParams, featureState,
                               <th className="w-[38px] sticky left-0 z-30 border-r border-b border-[#c8cccf] bg-[#e6f2eb] p-0">
                                  <div className="absolute right-0 bottom-0 w-0 h-0 border-b-[8px] border-b-[#a3d0b2] border-l-[8px] border-l-transparent"></div>
                               </th>
+                              {/* Action Column Header Spacer */}
+                              <th className="w-[40px] sticky left-[38px] z-30 border-r border-b border-[#c8cccf] bg-[#e6f2eb] p-0"></th>
                               {gridColumns.map((col, idx) => (
-                                 <th key={col} className="min-w-[120px] border-r border-b border-[#c8cccf] bg-[#e6f2eb] text-center py-1 px-2 select-none group">
+                                 <th key={`${col}-${idx}`} className="min-w-[120px] border-r border-b border-[#c8cccf] bg-[#e6f2eb] text-center py-1 px-2 select-none group relative">
                                     <span className="text-[11px] font-medium text-[#107c41] block">{String.fromCharCode(65 + idx)}</span>
+                                    <button 
+                                       onClick={() => deleteGridColumn(idx)}
+                                       className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 p-0.5 rounded bg-rose-50 text-rose-500 hover:bg-rose-100 transition-all"
+                                       title="Delete Column"
+                                    >
+                                       <Activity size={8} />
+                                    </button>
                                  </th>
                               ))}
-                              {/* Action Column Header */}
-                              <th className="w-[40px] border-b border-[#c8cccf] bg-[#e6f2eb]"></th>
                            </tr>
                            <tr className="bg-white">
                               <th className="w-[38px] sticky left-0 z-30 border-r border-b border-[#c8cccf] bg-[#f3f2f1] text-center select-none py-1">
                                  <span className="text-[11px] font-medium text-[#605e5c] block">1</span>
+                              </th>
+                              {/* Row Actions Header */}
+                              <th className="w-[40px] sticky left-[38px] z-30 border-r border-b border-[#c8cccf] bg-white text-center">
+                                 <button onClick={addGridRow} className="p-1 hover:bg-green-50 rounded-full text-green-600 transition-colors" title="Add Row">
+                                    <PlusCircle size={14} />
+                                 </button>
                               </th>
                               {gridColumns.map((col) => (
                                  <th key={`${col}-name`} className="border-r border-b border-[#c8cccf] px-2 py-1 bg-white whitespace-nowrap text-left font-bold text-slate-800 text-[11px]">
                                     {col}
                                  </th>
                               ))}
-                              <th className="w-[40px] border-b border-[#c8cccf] bg-white text-center">
-                                 <button onClick={addGridRow} className="p-1 hover:bg-green-50 rounded-full text-green-600 transition-colors" title="Add Row">
-                                    <PlusCircle size={14} />
-                                 </button>
-                              </th>
                            </tr>
                         </thead>
                         <tbody className="relative z-0">
@@ -324,6 +335,16 @@ export default function FabricAudit({ setActivePage, setNavParams, featureState,
                                  {/* Row Number */}
                                  <td className="w-[38px] sticky left-0 z-10 border-r border-b border-[#c8cccf] bg-[#f3f2f1] text-center select-none py-1">
                                     <span className="text-[11px] font-medium text-[#605e5c] block">{rowIndex + 2}</span>
+                                 </td>
+                                 {/* Row Actions (Modify indicator and Delete) */}
+                                 <td className="w-[40px] sticky left-[38px] z-20 border-r border-b border-[#c8cccf] bg-white text-center flex items-center justify-center gap-1 py-1">
+                                    <button 
+                                       onClick={() => deleteGridRow(rowIndex)} 
+                                       className="p-1 hover:bg-rose-50 rounded-md text-rose-400 hover:text-rose-600 transition-colors" 
+                                       title="Delete Row"
+                                    >
+                                       <Activity size={12} />
+                                    </button>
                                  </td>
                                  {row.map((cell, colIndex) => (
                                     <td key={colIndex} className="p-0 border-r border-b border-[#c8cccf] bg-white focus-within:ring-2 focus-within:ring-green-500 focus-within:z-10 relative">
@@ -334,12 +355,6 @@ export default function FabricAudit({ setActivePage, setNavParams, featureState,
                                        />
                                     </td>
                                  ))}
-                                 {/* Delete Action Cell */}
-                                 <td className="w-[40px] border-b border-[#c8cccf] bg-white text-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <button onClick={() => deleteGridRow(rowIndex)} className="p-1 hover:bg-rose-50 rounded-full text-rose-500 transition-colors" title="Delete Row">
-                                       <Activity size={14} /> {/* Using Activity as a placeholder for Delete if Trash is missing, but checking lucide list... and activity is there. I'll use TerminalIcon if no Trash. Wait, let me check imports. */}
-                                    </button>
-                                 </td>
                               </tr>
                            ))}
                            {/* Empty Spacer Row for better UX */}
@@ -361,22 +376,6 @@ export default function FabricAudit({ setActivePage, setNavParams, featureState,
                            <>Showing <span className="font-semibold text-slate-600">{gridData.length}</span> records · Live editing mode</>
                         )}
                      </p>
-                     <div className="flex items-center gap-3">
-                        <button 
-                           onClick={handleSave} 
-                           disabled={saveStatus === 'saving'}
-                           className={`px-3 py-1.5 rounded-md text-[11px] font-bold flex items-center gap-2 transition-colors ${
-                              saveStatus === 'saved' ? 'text-emerald-600 bg-emerald-50/50' : 'text-slate-500 hover:text-slate-900'
-                           }`}
-                        >
-                           {saveStatus === 'saving' ? <RefreshCw size={12} className="animate-spin" /> : <Database size={12} />}
-                           {saveStatus === 'saving' ? 'Saving...' : saveStatus === 'saved' ? 'Saved' : 'Save Changes'}
-                        </button>
-                        <div className="w-px h-4 bg-slate-200" />
-                        <button onClick={toggleExecution} className="px-3 py-1.5 rounded-md text-[11px] font-bold text-blue-600 hover:bg-blue-50 transition-colors flex items-center gap-2">
-                           <Zap size={12} /> Run Full Audit
-                        </button>
-                     </div>
                   </div>
                </div>
 

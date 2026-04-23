@@ -13,9 +13,15 @@ import {
   Zap,
   RefreshCw,
   Undo2,
-  ChevronDown
+  ChevronDown,
+  Trash2,
+  Sparkles,
+  Activity
 } from 'lucide-react'
 import { useAppContext } from '../store/AppContext'
+import logo from "../assets/Images/Sonata_Software_Logo.svg"
+import intelqa_logo from "../assets/Images/Intell_Logo.svg"
+
 
 const globalNav = [
   { id: 'configuration', label: 'Master Configuration', icon: Settings },
@@ -30,18 +36,14 @@ export default function Sidebar({ activePage, setActivePage, featureState, setFe
 
   return (
     <aside className="w-64 flex-shrink-0 bg-white border-r border-slate-200 flex flex-col">
-      {/* Logo */}
+      {/* Corporate Branding Top Bar */}
       <div 
         onClick={() => setActivePage('dashboard')}
-        className="h-16 flex items-center gap-3 px-5 border-b border-slate-100 cursor-pointer hover:opacity-80 transition-all"
+        className="h-20 flex items-center gap-3 px-5 border-b border-slate-100 cursor-pointer hover:opacity-80 transition-all"
       >
-        <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center flex-shrink-0 shadow-lg shadow-blue-500/20">
-          <FlaskConical size={16} className="text-white" />
-        </div>
-        <div>
-          <p className="text-sm font-black leading-tight uppercase tracking-tighter text-slate-900">Smart</p>
-          <p className="text-[10px] font-bold leading-tight uppercase opacity-40 text-slate-400">Data</p>
-        </div>
+        <img src={logo} alt="Sonata" className="h-8" />
+        <div className="w-px h-6 bg-slate-200" />
+        <img src={intelqa_logo} alt="IntellQA" className="h-6" />
       </div>
 
       {/* Navigation */}
@@ -83,23 +85,39 @@ function FeatureToggle({ featureState, setFeatureState }) {
   const { 
     isRunning, toggleExecution, 
     selectedDataset, setSelectedDataset, 
-    uploadedFile, handleFileUpload,
-    isComplete, reportData 
+    uploadedFile, setUploadedFile, handleFileUpload,
   } = useAppContext();
 
   const isIntro = !featureState || featureState === 'intro';
-  const isQuery = featureState === 'query';
   const isExecution = featureState === 'execution';
+  const isQuery = featureState === 'query' || isIntro;
 
   const modes = [
-    { id: 'query', label: 'Query Mode', icon: List, visible: isIntro || isExecution },
-    { id: 'execution', label: 'Execution Mode', icon: Play, visible: isIntro || isQuery },
+    { id: 'query', label: 'Query Mode', icon: List, visible: isExecution },
+    { id: 'execution', label: 'Execution Mode', icon: Play, visible: isQuery },
   ]
 
   return (
     <div className="space-y-4">
-      <div className="px-4 py-2">
-        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 opacity-60">Module Workspace</p>
+      {/* Smart Data Branding - High Energy / AI Style */}
+      <div className="px-4 py-3 flex items-center gap-4 mb-2 group relative">
+        {/* Glowing Background Aura */}
+        <div className="absolute left-6 w-8 h-8 bg-indigo-500/20 blur-2xl rounded-full animate-pulse group-hover:bg-fuchsia-500/30 transition-colors" />
+        
+        <div className="relative w-11 h-11 rounded-xl bg-gradient-to-br from-indigo-600 via-blue-600 to-fuchsia-500 flex items-center justify-center flex-shrink-0 shadow-2xl shadow-indigo-500/40 transition-all duration-500 group-hover:rotate-12 group-hover:scale-110">
+          <Sparkles size={20} className="text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.8)] fill-white/10" />
+        </div>
+        <div className="flex flex-col relative">
+          <p className="text-sm font-black leading-tight uppercase tracking-[-0.03em] text-slate-900 group-hover:text-indigo-600 transition-colors">Smart</p>
+          <div className="flex items-center gap-1">
+            <p className="text-[10px] font-bold leading-tight uppercase tracking-[0.2em] text-fuchsia-600">Data</p>
+            <div className="w-1 h-1 rounded-full bg-fuchsia-500 animate-bounce" />
+          </div>
+        </div>
+      </div>
+
+      <div className="px-4">
+        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 opacity-60 border-t border-slate-100 pt-4">Module Workspace</p>
       </div>
       <div className="space-y-2">
         {modes.filter(m => m.visible).map((mode) => {
@@ -125,12 +143,10 @@ function FeatureToggle({ featureState, setFeatureState }) {
                 {isActive && <ChevronRight size={14} className="opacity-50" />}
               </button>
 
-              {/* Audit Configuration: Only visible under Query Mode button in Execution Mode */}
               {mode.id === 'query' && isExecution && (
                 <div className="mx-2 mt-4 p-4 rounded-2xl bg-slate-50 border border-slate-100 space-y-4 animate-in slide-in-from-top-2 duration-300">
                   <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 opacity-60">Audit Config</p>
                   
-                  {/* Dataset Selector */}
                   <div className="space-y-1.5">
                     <label className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Data Layer</label>
                     <div className="relative">
@@ -150,20 +166,33 @@ function FeatureToggle({ featureState, setFeatureState }) {
                     </div>
                   </div>
 
-                  {/* File Upload */}
                   <div className="space-y-1.5">
                     <label className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Source File</label>
-                    <label className={`flex items-center gap-2 cursor-pointer p-2 rounded-lg border transition-all ${uploadedFile ? 'border-emerald-200 bg-emerald-50/50' : 'border-slate-200 bg-white hover:border-blue-300'}`}>
-                      <input type="file" className="hidden" accept=".csv" onChange={handleFileUpload} />
-                      <CloudUpload size={14} className={uploadedFile ? 'text-emerald-600' : 'text-slate-400'} />
-                      <span className="text-[10px] font-bold text-slate-600 truncate">{uploadedFile ? uploadedFile.name : 'Upload CSV'}</span>
-                    </label>
+                    <div className="flex gap-2">
+                      <label className={`flex-1 flex items-center gap-2 cursor-pointer p-2 rounded-lg border transition-all ${uploadedFile ? 'border-emerald-200 bg-emerald-50/50' : 'border-slate-200 bg-white hover:border-blue-300'}`}>
+                        <input type="file" className="hidden" accept=".csv" onChange={handleFileUpload} />
+                        <CloudUpload size={14} className={uploadedFile ? 'text-emerald-600' : 'text-slate-400'} />
+                        <span className="text-[10px] font-bold text-slate-600 truncate">{uploadedFile ? uploadedFile.name : 'Upload CSV'}</span>
+                      </label>
+                      {uploadedFile && (
+                        <button 
+                          onClick={() => {
+                            setUploadedFile(null);
+                          }}
+                          className="p-2 rounded-lg border border-rose-100 bg-rose-50 text-rose-500 hover:bg-rose-100 transition-all flex items-center justify-center shadow-sm"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      )}
+                    </div>
                   </div>
 
-                  {/* Execution Button */}
                   <div className="pt-2">
                     <button
-                      onClick={toggleExecution}
+                      onClick={() => {
+                        setFeatureState('execution');
+                        toggleExecution();
+                      }}
                       className={`w-full py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all active:scale-[0.98] ${isRunning
                         ? 'bg-rose-500 hover:bg-rose-600 text-white shadow-lg shadow-rose-500/20'
                         : 'bg-slate-900 hover:bg-black text-white shadow-lg shadow-slate-900/20'

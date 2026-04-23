@@ -23,6 +23,11 @@ export function AppProvider({ children }) {
 
   // Initialize Grid Data based on dataset
   React.useEffect(() => {
+    // Reset execution state when dataset changes to prevent stale data
+    setIsComplete(false);
+    setReportData(null);
+    setLogs([]);
+
     const cols = selectedDataset === 'bronze_silver' 
       ? ['Order_ID', 'Customer_ID', 'Product', 'Quantity', 'Unit_Price', 'Region', 'Status']
       : selectedDataset === 'silver_gold'
@@ -63,6 +68,16 @@ export function AppProvider({ children }) {
 
   const deleteGridRow = (rowIndex) => {
     setGridData(prev => prev.filter((_, i) => i !== rowIndex));
+  };
+
+  const addGridColumn = (colName = `New_Column`) => {
+    setGridColumns(prev => [...prev, colName]);
+    setGridData(prev => prev.map(row => [...row, '']));
+  };
+
+  const deleteGridColumn = (colIndex) => {
+    setGridColumns(prev => prev.filter((_, i) => i !== colIndex));
+    setGridData(prev => prev.map(row => row.filter((_, i) => i !== colIndex)));
   };
 
   // --- LOGIC: LIVE LOG STREAM ---
@@ -144,6 +159,7 @@ export function AppProvider({ children }) {
     reportData, setReportData,
     gridColumns, gridData,
     updateGridCell, addGridRow, deleteGridRow,
+    addGridColumn, deleteGridColumn,
     toggleExecution, handleFileUpload,
     navigate
   };

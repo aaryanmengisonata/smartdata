@@ -43,7 +43,7 @@ export default function App() {
       <div className="flex flex-col flex-1 overflow-hidden relative">
         {!['dashboard', 'welcome'].includes(activePage) && <Header activePage={activePage} />}
         
-        <main className={`flex-1 flex flex-col min-h-0 bg-white ${(activePage === 'fabric_audit' && featureState === 'execution') ? 'overflow-hidden p-0' : 'overflow-y-auto p-0'}`}>
+        <main className={`flex-1 flex flex-col min-h-0 bg-white pb-10 ${(activePage === 'fabric_audit' && featureState === 'execution') ? 'overflow-hidden' : 'overflow-y-auto'}`}>
           {React.cloneElement(currentPage, { featureState, setFeatureState })}
         </main>
         

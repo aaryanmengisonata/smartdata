@@ -9,7 +9,10 @@ export default function Terminal({ logs, minHeight = "400px" }) {
   }, [logs])
 
   return (
-    <div className={`flex-1 rounded-2xl border border-slate-200 shadow-2xl overflow-hidden flex flex-col transition-all min-h-[${minHeight}] bg-white`}>
+    <div 
+      className="flex-1 rounded-2xl border border-slate-200 shadow-2xl overflow-hidden flex flex-col transition-all bg-white"
+      style={{ minHeight }}
+    >
       <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
         <div className="flex items-center gap-2">
           <TerminalIcon size={16} className="text-slate-500" />
@@ -17,7 +20,10 @@ export default function Terminal({ logs, minHeight = "400px" }) {
         </div>
       </div>
       
-      <div className={`p-6 flex-1 font-mono text-[11px] overflow-y-auto space-y-1.5 min-h-[${minHeight}] bg-slate-50 text-slate-600`}>
+      <div 
+        className="p-6 flex-1 font-mono text-[11px] overflow-y-auto space-y-1.5 bg-slate-50 text-slate-600"
+        style={{ minHeight }}
+      >
         {logs.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center opacity-20 py-20">
              <Database size={48} className="mb-4" />
