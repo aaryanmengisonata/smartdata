@@ -90,11 +90,11 @@ function FeatureToggle({ featureState, setFeatureState }) {
 
   const isIntro = !featureState || featureState === 'intro';
   const isExecution = featureState === 'execution';
-  const isQuery = featureState === 'query' || isIntro;
+  const isQuery = featureState === 'query';
 
   const modes = [
-    { id: 'query', label: 'Query Mode', icon: List, visible: isExecution },
-    { id: 'execution', label: 'Execution Mode', icon: Play, visible: isQuery },
+    { id: 'query', label: 'Query Mode', icon: List, visible: isIntro || isExecution },
+    { id: 'execution', label: 'Execution Mode', icon: Play, visible: isIntro || isQuery },
   ]
 
   return (

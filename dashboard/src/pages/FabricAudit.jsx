@@ -196,10 +196,15 @@ export default function FabricAudit({ setActivePage, setNavParams, featureState,
                   <OutputPanel 
                      query={queryBuffer} 
                      setQuery={setQueryBuffer}
-                     onExplain={() => {}} 
-                     onRefine={() => {}} 
-                     onRun={toggleExecution} 
-                     onFormat={() => {}}
+                     onExplain={() => alert('AI Explanation:\nThis query joins the Bronze and Silver medallion layers on ID to identify record discrepancies.')} 
+                     onRefine={() => alert('Opening AI Refinement Dialog...')} 
+                     onRun={() => {
+                        setFeatureState('execution')
+                        toggleExecution()
+                     }} 
+                     onFormat={() => alert('Code formatted successfully!')}
+                     onOpenHistory={() => setIsHistoryOpen(true)}
+                     onLogs={() => alert('No active logic execution logs found. Please run the query first.')}
                   />
                </div>
             </div>

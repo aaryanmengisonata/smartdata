@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Cpu, Copy, Play, Brush, Sparkles, MessageSquare, Terminal, Check, Info } from 'lucide-react';
 
-export default function OutputPanel({ query, setQuery, onExplain, onRefine, onRun, onFormat }) {
+export default function OutputPanel({ query, setQuery, onExplain, onRefine, onRun, onFormat, onOpenHistory, onLogs }) {
   const [activeTab, setActiveTab] = useState('SQL');
   const [copied, setCopied] = useState(false);
 
@@ -12,9 +12,9 @@ export default function OutputPanel({ query, setQuery, onExplain, onRefine, onRu
   };
 
   const tabs = [
-    { id: 'SQL', icon: <Terminal size={14} /> },
-    { id: 'Logs', icon: <MessageSquare size={14} /> },
-    { id: 'History', icon: <Info size={14} /> },
+    { id: 'SQL', icon: <Terminal size={14} />, action: () => setActiveTab('SQL') },
+    { id: 'Logs', icon: <MessageSquare size={14} />, action: onLogs },
+    { id: 'History', icon: <Info size={14} />, action: onOpenHistory },
   ];
 
   return (
@@ -31,7 +31,7 @@ export default function OutputPanel({ query, setQuery, onExplain, onRefine, onRu
           {tabs.map((tab) => (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
+              onClick={tab.action}
               className={`flex items-center gap-2 px-4 py-1.5 rounded-md text-xs font-semibold transition-all duration-200 ${
                 activeTab === tab.id 
                   ? 'bg-white text-slate-900 shadow-sm' 
