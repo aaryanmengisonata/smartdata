@@ -13,6 +13,7 @@ export function AppProvider({ children }) {
   const [logs, setLogs] = useState([]);
   const [showLogs, setShowLogs] = useState(false);
   const [selectedDataset, setSelectedDataset] = useState('bronze_silver');
+  const [selectedReport, setSelectedReport] = useState('none');
   const [uploadedFile, setUploadedFile] = useState(null);
   const [isComplete, setIsComplete] = useState(false);
   const [reportData, setReportData] = useState(null);
@@ -28,15 +29,29 @@ export function AppProvider({ children }) {
     setReportData(null);
     setLogs([]);
 
-    const cols = selectedDataset === 'bronze_silver' 
-      ? ['Order_ID', 'Customer_ID', 'Product', 'Quantity', 'Unit_Price', 'Region', 'Status']
-      : selectedDataset === 'silver_gold'
-      ? ['Customer_ID', 'Total_Spend', 'Order_Count', 'LTV_Segment', 'Last_Active', 'Risk_Score']
-      : ['Column_A', 'Column_B', 'Column_C', 'Column_D', 'Column_E'];
+    let cols = [];
+    if (selectedReport === 'allure') {
+      cols = ['Test_Case', 'Status', 'Duration_ms', 'Error_Message', 'Module'];
+    } else if (selectedReport === 'custom') {
+      cols = ['Metric_ID', 'Value', 'Threshold', 'Status', 'Timestamp'];
+    } else {
+      cols = selectedDataset === 'bronze_silver' 
+        ? ['Order_ID', 'Customer_ID', 'Product', 'Quantity', 'Unit_Price', 'Region', 'Status']
+        : selectedDataset === 'silver_gold'
+        ? ['Customer_ID', 'Total_Spend', 'Order_Count', 'LTV_Segment', 'Last_Active', 'Risk_Score']
+        : ['Column_A', 'Column_B', 'Column_C', 'Column_D', 'Column_E'];
+    }
     
     setGridColumns(cols);
 
     const initialData = Array.from({ length: 20 }, (_, i) => {
+      if (selectedReport === 'allure') return [
+        `TC_${1001 + i}`, i % 5 === 0 ? 'Failed' : 'Passed', Math.floor(Math.random() * 500) + 50,
+        i % 5 === 0 ? 'Assertion Error: Expected 200 got 500' : 'None', 'Auth_Module'
+      ];
+      if (selectedReport === 'custom') return [
+        `MTRC_${800 + i}`, (Math.random() * 100).toFixed(2), '90.00', i % 4 === 0 ? 'Warning' : 'OK', new Date().toISOString().split('T')[0]
+      ];
       if (selectedDataset === 'bronze_silver') return [
         `ORD_${10041 + i}`, `CUST_${8500 + i}`, 
         i % 3 === 0 ? 'MacBook Pro 16"' : i % 2 === 0 ? 'AirPods Pro' : 'Magic Keyboard',
@@ -51,7 +66,7 @@ export function AppProvider({ children }) {
       return [`Data_A_${i}`, `Data_B_${i}`, `Data_C_${i}`, `Data_D_${i}`, `Data_E_${i}`];
     });
     setGridData(initialData);
-  }, [selectedDataset]);
+  }, [selectedDataset, selectedReport]);
 
   const updateGridCell = (rowIndex, colIndex, value) => {
     setGridData(prev => {
@@ -154,6 +169,7 @@ export function AppProvider({ children }) {
     logs, setLogs,
     showLogs, setShowLogs,
     selectedDataset, setSelectedDataset,
+    selectedReport, setSelectedReport,
     uploadedFile, setUploadedFile,
     isComplete, setIsComplete,
     reportData, setReportData,

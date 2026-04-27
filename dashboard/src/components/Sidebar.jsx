@@ -16,7 +16,8 @@ import {
   ChevronDown,
   Trash2,
   Sparkles,
-  Activity
+  Activity,
+  ShieldCheck
 } from 'lucide-react'
 import { useAppContext } from '../store/AppContext'
 import logo from "../assets/Images/Sonata_Software_Logo.svg"
@@ -47,7 +48,7 @@ export default function Sidebar({ activePage, setActivePage, featureState, setFe
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 py-6 px-3 space-y-2">
+      <nav className="flex-1 overflow-y-auto overflow-x-hidden py-6 px-3 space-y-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
         {!isFeatureMode ? (
           globalNav.map((item) => {
             const { id, label, icon: Icon } = item
@@ -85,6 +86,7 @@ function FeatureToggle({ featureState, setFeatureState }) {
   const { 
     isRunning, toggleExecution, 
     selectedDataset, setSelectedDataset, 
+    selectedReport, setSelectedReport,
     uploadedFile, setUploadedFile, handleFileUpload,
   } = useAppContext();
 
@@ -93,8 +95,9 @@ function FeatureToggle({ featureState, setFeatureState }) {
   const isQuery = featureState === 'query';
 
   const modes = [
-    { id: 'query', label: 'Query Mode', icon: List, visible: isIntro || isExecution },
-    { id: 'execution', label: 'Execution Mode', icon: Play, visible: isIntro || isQuery },
+    { id: 'query', label: 'Query Mode', icon: List, visible: isIntro || isExecution || featureState === 'validation' },
+    { id: 'validation', label: 'Validation', icon: ShieldCheck, visible: isIntro || isExecution || isQuery },
+    { id: 'execution', label: 'Execution Mode', icon: Play, visible: isIntro || isQuery || featureState === 'validation' },
   ]
 
   return (
@@ -143,10 +146,8 @@ function FeatureToggle({ featureState, setFeatureState }) {
                 {isActive && <ChevronRight size={14} className="opacity-50" />}
               </button>
 
-              {mode.id === 'query' && isExecution && (
-                <div className="mx-2 mt-4 p-4 rounded-2xl bg-slate-50 border border-slate-100 space-y-4 animate-in slide-in-from-top-2 duration-300">
-                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 opacity-60">Audit Config</p>
-                  
+              {mode.id === 'validation' && isExecution && (
+                <div className="mx-2 mt-4 space-y-4 animate-in slide-in-from-top-2 duration-300">
                   <div className="space-y-1.5">
                     <label className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Data Layer</label>
                     <div className="relative">
@@ -169,10 +170,10 @@ function FeatureToggle({ featureState, setFeatureState }) {
                   <div className="space-y-1.5">
                     <label className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Source File</label>
                     <div className="flex gap-2">
-                      <label className={`flex-1 flex items-center gap-2 cursor-pointer p-2 rounded-lg border transition-all ${uploadedFile ? 'border-emerald-200 bg-emerald-50/50' : 'border-slate-200 bg-white hover:border-blue-300'}`}>
+                      <label className={`flex-1 flex items-center min-w-0 gap-2 cursor-pointer p-2 rounded-lg border transition-all ${uploadedFile ? 'border-emerald-200 bg-emerald-50/50' : 'border-slate-200 bg-white hover:border-blue-300'}`}>
                         <input type="file" className="hidden" accept=".csv" onChange={handleFileUpload} />
-                        <CloudUpload size={14} className={uploadedFile ? 'text-emerald-600' : 'text-slate-400'} />
-                        <span className="text-[10px] font-bold text-slate-600 truncate">{uploadedFile ? uploadedFile.name : 'Upload CSV'}</span>
+                        <CloudUpload size={14} className={`${uploadedFile ? 'text-emerald-600' : 'text-slate-400'} shrink-0`} />
+                        <span className="text-[10px] font-bold text-slate-600 truncate flex-1 min-w-0">{uploadedFile ? uploadedFile.name : 'Upload CSV'}</span>
                       </label>
                       {uploadedFile && (
                         <button 
@@ -198,8 +199,24 @@ function FeatureToggle({ featureState, setFeatureState }) {
                         : 'bg-slate-900 hover:bg-black text-white shadow-lg shadow-slate-900/20'
                       }`}
                     >
-                      {isRunning ? <><RefreshCw size={12} className="animate-spin" /> Stop</> : <><Zap size={12} /> Run Audit</>}
+                      {isRunning ? <><RefreshCw size={12} className="animate-spin" /> Stop</> : <><Zap size={12} /> Run</>}
                     </button>
+                  </div>
+
+                  <div className="pt-2 border-t border-slate-100">
+                    <label className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 block">Report Format</label>
+                    <div className="relative">
+                      <select
+                        value={selectedReport}
+                        onChange={(e) => setSelectedReport(e.target.value)}
+                        className="w-full appearance-none text-[11px] font-bold text-slate-700 bg-white border border-slate-200 rounded-lg px-2 py-2 pr-7 outline-none focus:border-blue-400 transition-all cursor-pointer shadow-sm"
+                      >
+                        <option value="none">Select Report...</option>
+                        <option value="allure">Allure Report</option>
+                        <option value="custom">Custom Report</option>
+                      </select>
+                      <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={12} />
+                    </div>
                   </div>
                 </div>
               )}

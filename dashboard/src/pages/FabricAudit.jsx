@@ -8,7 +8,7 @@ import {
    Database, RefreshCw, Activity, Layers,
    Terminal as TerminalIcon, PlusCircle,
    Undo2, AlertCircle, CheckCircle as CheckCircleIcon,
-   ChevronDown
+   ChevronDown, X, Maximize2
 } from 'lucide-react'
 import Terminal from '../components/shared/Terminal'
 
@@ -17,10 +17,11 @@ import QueryHeader from '../components/features/query-builder/Header'
 import InputPanel from '../components/features/query-builder/InputPanel'
 import OutputPanel from '../components/features/query-builder/OutputPanel'
 import HistoryDrawer from '../components/features/query-builder/HistoryDrawer'
+import ValidationPanel from '../components/features/query-builder/ValidationPanel'
 
 export default function FabricAudit({ setActivePage, setNavParams, featureState, setFeatureState }) {
    const {
-      isRunning, logs, showLogs, selectedDataset, uploadedFile,
+      isRunning, logs, showLogs, selectedDataset, selectedReport, uploadedFile,
       isComplete, setIsComplete,
       reportData, setReportData,
       gridColumns, gridData,
@@ -41,6 +42,9 @@ export default function FabricAudit({ setActivePage, setNavParams, featureState,
       return saved ? JSON.parse(saved) : [];
    });
    const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+   
+   // Cell Editing State
+   const [activeCellEdit, setActiveCellEdit] = useState(null); // { r, c, val }
 
    useEffect(() => {
       localStorage.setItem('query_history', JSON.stringify(history));
@@ -106,17 +110,41 @@ export default function FabricAudit({ setActivePage, setNavParams, featureState,
       }, 1000)
    }
 
-   const handleExport = () => {
-      if (!reportData) return
-      const csvContent = "Record ID,Field,Source,Target,Risk\n" +
-         reportData.mismatchDetails.map(m => `${m.id},${m.field},${m.source},${m.target},${m.risk}`).join("\n")
-      const blob = new Blob([csvContent], { type: 'text/csv' })
-      const url = window.URL.createObjectURL(blob)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `Fabric_Audit_${selectedDataset}_${new Date().toISOString().slice(0, 10)}.csv`
-      a.click()
-   }
+   const handleExport = (type = 'csv') => {
+      if (type === 'pdf') {
+         window.print();
+         return;
+      }
+
+      if (type === 'html' && selectedReport !== 'none') {
+         const link = document.createElement('a');
+         link.href = `/reports/${selectedReport}.html`;
+         link.download = `${selectedReport}_report.html`;
+         link.click();
+         return;
+      }
+
+      // Default CSV export logic
+      let content = "";
+      let filename = "";
+
+      if (reportData && !isReportMode) {
+         content = "Record ID,Field,Source,Target,Risk\n" +
+            reportData.mismatchDetails.map(m => `${m.id},${m.field},${m.source},${m.target},${m.risk}`).join("\n");
+         filename = `Audit_Results_${datasetLabel}_${new Date().toISOString().slice(0,10)}.csv`;
+      } else {
+         content = gridColumns.join(",") + "\n" + 
+                  gridData.map(row => row.map(cell => `"${cell}"`).join(",")).join("\n");
+         filename = `Fabric_Data_Export_${new Date().toISOString().slice(0,10)}.csv`;
+      }
+
+      const blob = new Blob([content], { type: 'text/csv' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      a.click();
+   };
 
 
    // --- RENDER INTRO MODE ---
@@ -221,10 +249,18 @@ export default function FabricAudit({ setActivePage, setNavParams, featureState,
       )
    }
 
-   // --- RENDER EXECUTION MODE ---
-   const showPreview = selectedDataset && (selectedDataset !== 'custom' || uploadedFile) && !isRunning && !isComplete;
+   // --- RENDER VALIDATION MODE ---
+   if (currentMode === 'validation') {
+      return <ValidationPanel />
+   }
 
-   const datasetLabel = selectedDataset === 'bronze_silver' ? 'Bronze → Silver'
+   // --- RENDER EXECUTION MODE ---
+   const isReportMode = selectedReport && selectedReport !== 'none';
+   const showPreview = (isReportMode || (selectedDataset && (selectedDataset !== 'custom' || uploadedFile))) && !isRunning && !isComplete;
+
+   const datasetLabel = isReportMode 
+      ? (selectedReport === 'allure' ? 'Allure Report' : 'Custom Report')
+      : selectedDataset === 'bronze_silver' ? 'Bronze → Silver'
       : selectedDataset === 'silver_gold' ? 'Silver → Gold'
       : uploadedFile ? uploadedFile.name : 'Custom'
 
@@ -249,53 +285,66 @@ export default function FabricAudit({ setActivePage, setNavParams, featureState,
                         </div>
                      </div>
                      <div className="flex items-center gap-2">
-                        <button 
-                           onClick={() => addGridColumn()}
-                           className="h-9 px-4 rounded-lg text-xs font-semibold flex items-center gap-2 transition-all border border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300"
-                        >
-                           <Layers size={14} className="text-blue-500" />
-                           Add Column
-                        </button>
-                        <button 
-                           onClick={addGridRow}
-                           className="h-9 px-4 rounded-lg text-xs font-semibold flex items-center gap-2 transition-all border border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300"
-                        >
-                           <PlusCircle size={14} className="text-emerald-500" />
-                           Add Record
-                        </button>
-                        <button 
-                           onClick={handleSave}
-                           disabled={saveStatus === 'saving'}
-                           className={`h-9 px-4 rounded-lg text-xs font-semibold flex items-center gap-2 transition-all border ${
-                              saveStatus === 'saved' 
-                              ? 'bg-emerald-50 border-emerald-200 text-emerald-600' 
-                              : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300'
-                           }`}
-                        >
-                           {saveStatus === 'saving' ? <RefreshCw size={14} className="animate-spin text-slate-400" /> : <Database size={14} />}
-                           {saveStatus === 'saving' ? 'Saving...' : saveStatus === 'saved' ? 'Saved' : 'Save Changes'}
-                        </button>
+                        {!isReportMode ? (
+                           <>
+                              <button 
+                                 onClick={() => addGridColumn()}
+                                 className="h-9 px-4 rounded-lg text-xs font-semibold flex items-center gap-2 transition-all border border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300"
+                              >
+                                 <Layers size={14} className="text-blue-500" />
+                                 Add Column
+                              </button>
+                              <button 
+                                 onClick={addGridRow}
+                                 className="h-9 px-4 rounded-lg text-xs font-semibold flex items-center gap-2 transition-all border border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300"
+                              >
+                                 <PlusCircle size={14} className="text-emerald-500" />
+                                 Add Record
+                              </button>
+                              <button 
+                                 onClick={handleSave}
+                                 disabled={saveStatus === 'saving'}
+                                 className={`h-9 px-4 rounded-lg text-xs font-semibold flex items-center gap-2 transition-all border ${
+                                    saveStatus === 'saved' 
+                                    ? 'bg-emerald-50 border-emerald-200 text-emerald-600' 
+                                    : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300'
+                                 }`}
+                              >
+                                 {saveStatus === 'saving' ? <RefreshCw size={14} className="animate-spin text-slate-400" /> : <Database size={14} />}
+                                 {saveStatus === 'saving' ? 'Saving...' : saveStatus === 'saved' ? 'Saved' : 'Save Changes'}
+                              </button>
+                           </>
+                        ) : (
+                           <div className="flex items-center gap-1.5 p-1 bg-slate-100 rounded-lg border border-slate-200">
+                              <button onClick={() => handleExport('pdf')} className="h-7 px-3 rounded-md text-[11px] font-bold flex items-center gap-2 transition-all bg-white text-slate-700 shadow-sm hover:text-rose-600 hover:shadow">
+                                 <Activity size={12} className="text-rose-500" />
+                                 Export PDF
+                              </button>
+                              <button onClick={() => handleExport('csv')} className="h-7 px-3 rounded-md text-[11px] font-bold flex items-center gap-2 transition-all bg-white text-slate-700 shadow-sm hover:text-emerald-600 hover:shadow">
+                                 <Database size={12} className="text-emerald-500" />
+                                 Export CSV
+                              </button>
+                              <button onClick={() => handleExport('html')} className="h-7 px-3 rounded-md text-[11px] font-bold flex items-center gap-2 transition-all bg-white text-slate-700 shadow-sm hover:text-blue-600 hover:shadow">
+                                 <FileText size={12} className="text-blue-500" />
+                                 Export HTML
+                              </button>
+                           </div>
+                        )}
                      </div>
                   </div>
 
-                  {/* Condensed Stats Strip */}
-                  <div className="flex items-center gap-8 px-6 py-2 bg-slate-50 border-b border-slate-100 overflow-x-auto">
-                     {[
-                        { label: 'Total', value: '12,450', color: 'text-slate-600' },
-                        { label: 'Synced', value: '12,432', color: 'text-emerald-600' },
-                        { label: 'Pending', value: '18', color: 'text-rose-500' },
-                        { label: 'Rate', value: '99.85%', color: 'text-blue-600' },
-                     ].map(s => (
-                        <div key={s.label} className="flex items-center gap-2">
-                           <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{s.label}:</span>
-                           <span className={`text-[11px] font-black ${s.color}`}>{s.value}</span>
-                        </div>
-                     ))}
-                  </div>
 
-                  {/* Editable Excel-like Data Table */}
-                  <div className="flex-1 overflow-auto bg-[#e6e6e6] p-0 relative border-t border-slate-200">
-                     <table className="min-w-full w-max text-left border-collapse bg-white cursor-cell">
+
+                  {/* Workspace Area: Grid or embedded HTML Report */}
+                  <div className="flex-1 overflow-auto bg-[#e6e6e6] p-0 relative border-t border-slate-200 flex flex-col">
+                     {isReportMode ? (
+                        <iframe 
+                           src={`/reports/${selectedReport}.html`} 
+                           title={`${selectedReport} report preview`}
+                           className="w-full flex-1 border-0 bg-white"
+                        />
+                     ) : (
+                        <table className="min-w-full w-max text-left border-collapse bg-white cursor-cell">
                         <thead className="sticky top-0 z-20">
                            <tr className="bg-[#e6f2eb]">
                               {/* Top Left Corner */}
@@ -307,13 +356,15 @@ export default function FabricAudit({ setActivePage, setNavParams, featureState,
                               {gridColumns.map((col, idx) => (
                                  <th key={`${col}-${idx}`} className="min-w-[120px] border-r border-b border-[#c8cccf] bg-[#e6f2eb] text-center py-1 px-2 select-none group relative">
                                     <span className="text-[11px] font-medium text-[#107c41] block">{String.fromCharCode(65 + idx)}</span>
-                                    <button 
-                                       onClick={() => deleteGridColumn(idx)}
-                                       className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 p-0.5 rounded bg-rose-50 text-rose-500 hover:bg-rose-100 transition-all"
-                                       title="Delete Column"
-                                    >
-                                       <Activity size={8} />
-                                    </button>
+                                    {!isReportMode && (
+                                       <button 
+                                          onClick={() => deleteGridColumn(idx)}
+                                          className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 p-0.5 rounded bg-rose-50 text-rose-500 hover:bg-rose-100 transition-all"
+                                          title="Delete Column"
+                                       >
+                                          <Activity size={8} />
+                                       </button>
+                                    )}
                                  </th>
                               ))}
                            </tr>
@@ -323,9 +374,11 @@ export default function FabricAudit({ setActivePage, setNavParams, featureState,
                               </th>
                               {/* Row Actions Header */}
                               <th className="w-[40px] sticky left-[38px] z-30 border-r border-b border-[#c8cccf] bg-white text-center">
-                                 <button onClick={addGridRow} className="p-1 hover:bg-green-50 rounded-full text-green-600 transition-colors" title="Add Row">
-                                    <PlusCircle size={14} />
-                                 </button>
+                                 {!isReportMode && (
+                                    <button onClick={addGridRow} className="p-1 hover:bg-green-50 rounded-full text-green-600 transition-colors" title="Add Row">
+                                       <PlusCircle size={14} />
+                                    </button>
+                                 )}
                               </th>
                               {gridColumns.map((col) => (
                                  <th key={`${col}-name`} className="border-r border-b border-[#c8cccf] px-2 py-1 bg-white whitespace-nowrap text-left font-bold text-slate-800 text-[11px]">
@@ -343,21 +396,36 @@ export default function FabricAudit({ setActivePage, setNavParams, featureState,
                                  </td>
                                  {/* Row Actions (Modify indicator and Delete) */}
                                  <td className="w-[40px] sticky left-[38px] z-20 border-r border-b border-[#c8cccf] bg-white text-center flex items-center justify-center gap-1 py-1">
-                                    <button 
-                                       onClick={() => deleteGridRow(rowIndex)} 
-                                       className="p-1 hover:bg-rose-50 rounded-md text-rose-400 hover:text-rose-600 transition-colors" 
-                                       title="Delete Row"
-                                    >
-                                       <Activity size={12} />
-                                    </button>
+                                    {!isReportMode && (
+                                       <button 
+                                          onClick={() => deleteGridRow(rowIndex)} 
+                                          className="p-1 hover:bg-rose-50 rounded-md text-rose-400 hover:text-rose-600 transition-colors" 
+                                          title="Delete Row"
+                                       >
+                                          <Activity size={12} />
+                                       </button>
+                                    )}
                                  </td>
                                  {row.map((cell, colIndex) => (
-                                    <td key={colIndex} className="p-0 border-r border-b border-[#c8cccf] bg-white focus-within:ring-2 focus-within:ring-green-500 focus-within:z-10 relative">
-                                       <input 
-                                          value={cell} 
-                                          onChange={(e) => updateGridCell(rowIndex, colIndex, e.target.value)}
-                                          className="w-full h-full bg-transparent px-2 py-1.5 outline-none text-[11px] text-slate-800 font-medium"
-                                       />
+                                    <td key={colIndex} className="p-0 border-r border-b border-[#c8cccf] bg-white focus-within:ring-2 focus-within:ring-green-500 focus-within:z-10 relative group/cell">
+                                       <div className="relative w-full h-full flex items-center">
+                                          <input 
+                                             value={cell} 
+                                             readOnly={isReportMode}
+                                             onChange={(e) => updateGridCell(rowIndex, colIndex, e.target.value)}
+                                             onDoubleClick={() => !isReportMode && setActiveCellEdit({ r: rowIndex, c: colIndex, val: cell })}
+                                             className={`w-full h-full bg-transparent px-2 py-1.5 outline-none text-[11px] text-slate-800 font-medium text-ellipsis ${isReportMode ? 'cursor-default' : ''}`}
+                                          />
+                                          {!isReportMode && (
+                                             <button
+                                                onClick={() => setActiveCellEdit({ r: rowIndex, c: colIndex, val: cell })}
+                                                className="absolute right-1 p-1 bg-white shadow-sm border border-slate-200 rounded opacity-0 group-hover/cell:opacity-100 hover:bg-slate-50 transition-opacity z-20"
+                                                title="Expand Cell"
+                                             >
+                                                <Maximize2 size={10} className="text-slate-500" />
+                                             </button>
+                                          )}
+                                       </div>
                                     </td>
                                  ))}
                               </tr>
@@ -368,6 +436,7 @@ export default function FabricAudit({ setActivePage, setNavParams, featureState,
                            </tr>
                         </tbody>
                      </table>
+                     )}
                   </div>
 
                   {/* Footer */}
@@ -377,9 +446,7 @@ export default function FabricAudit({ setActivePage, setNavParams, featureState,
                            <span className="text-emerald-600 font-bold flex items-center gap-1.5 animate-in fade-in zoom-in duration-300">
                               <CheckCircleIcon size={12} /> Modifications saved to Lakehouse catalog
                            </span>
-                        ) : (
-                           <>Showing <span className="font-semibold text-slate-600">{gridData.length}</span> records · Live editing mode</>
-                        )}
+                        ) : null}
                      </p>
                   </div>
                </div>
@@ -461,13 +528,60 @@ export default function FabricAudit({ setActivePage, setNavParams, featureState,
                      <Cpu size={28} className="text-slate-300" />
                   </div>
                   <h3 className="text-sm font-bold text-slate-700 mb-2">Ready to Audit</h3>
-                  <p className="text-xs text-slate-400 max-w-xs leading-relaxed mb-6">Select a data layer from the <span className="font-semibold text-slate-500">sidebar configuration</span>, then click <span className="font-semibold text-slate-500">Run Audit</span> to begin reconciliation.</p>
+                  <p className="text-xs text-slate-400 max-w-xs leading-relaxed mb-6">Select a data layer from the <span className="font-semibold text-slate-500">sidebar configuration</span>, then click <span className="font-semibold text-slate-500">Run</span> to begin reconciliation.</p>
                   <button onClick={toggleExecution} className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold transition-all active:scale-95">
-                     <Zap size={13} /> Run Audit
+                     <Zap size={13} /> Run
                   </button>
                </div>
             )}
          </div>
+
+         {/* Expanding Cell Edit Modal */}
+         {activeCellEdit && (
+            <div className="fixed inset-0 z-[100] flex animate-in fade-in duration-200">
+               <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setActiveCellEdit(null)} />
+               <div className="relative m-auto w-full max-w-2xl bg-white rounded-xl shadow-2xl flex flex-col animate-in zoom-in-95 duration-200">
+                  <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50/50 rounded-t-xl">
+                     <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2">
+                        <Maximize2 size={16} className="text-blue-600" />
+                        Edit Cell Content
+                     </h3>
+                     <button 
+                        onClick={() => setActiveCellEdit(null)}
+                        className="p-1.5 rounded-lg hover:bg-slate-200 text-slate-400 transition-colors"
+                     >
+                        <X size={16} />
+                     </button>
+                  </div>
+                  <div className="p-6">
+                     <textarea
+                        value={activeCellEdit.val}
+                        autoFocus
+                        onChange={(e) => setActiveCellEdit({ ...activeCellEdit, val: e.target.value })}
+                        className="w-full h-64 p-4 text-sm font-mono leading-relaxed text-slate-700 bg-slate-50 border border-slate-200 rounded-lg outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all resize-none"
+                        placeholder="Enter large payload or complex query..."
+                     />
+                  </div>
+                  <div className="px-6 py-4 border-t border-slate-100 bg-slate-50/50 rounded-b-xl flex items-center justify-end gap-3">
+                     <button 
+                        onClick={() => setActiveCellEdit(null)}
+                        className="px-4 py-2 rounded-lg text-xs font-bold text-slate-600 hover:bg-slate-200 transition-colors"
+                     >
+                        Cancel
+                     </button>
+                     <button 
+                        onClick={() => {
+                           updateGridCell(activeCellEdit.r, activeCellEdit.c, activeCellEdit.val)
+                           setActiveCellEdit(null)
+                        }}
+                        className="px-6 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-md shadow-blue-600/20 transition-all active:scale-95"
+                     >
+                        Save Content
+                     </button>
+                  </div>
+               </div>
+            </div>
+         )}
       </div>
    )
 }
