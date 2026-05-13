@@ -1,5 +1,17 @@
-import React, { useState } from 'react';
-import { ShieldCheck, Plus, Sparkles, Send, CheckCircle2, ChevronDown, ListChecks, Zap } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { 
+  Plus, 
+  Sparkles, 
+  Send, 
+  CheckCircle2, 
+  ChevronDown, 
+  ListChecks, 
+  Zap, 
+  Save, 
+  Search,
+  FileText,
+  Activity
+} from 'lucide-react';
 
 const INITIAL_VALIDATIONS = [
   { id: 'v1', name: 'Null Ratio Check', desc: 'Ensures target column has highly similar null ratios as the source table, preventing data loss during ELT.', type: 'Data Quality' },
@@ -11,193 +23,239 @@ const INITIAL_VALIDATIONS = [
 export default function ValidationPanel() {
   const [validations, setValidations] = useState(INITIAL_VALIDATIONS);
   const [activeValidationId, setActiveValidationId] = useState(INITIAL_VALIDATIONS[0].id);
-  const [prompt, setPrompt] = useState('');
-  const [isRunning, setIsRunning] = useState(false);
-  const [isEditingName, setIsEditingName] = useState(false);
+  const [mode, setMode] = useState('existing'); // 'existing' | 'new'
+  
+  // Form states to persist data when switching modes
+  const [existingForm, setExistingForm] = useState({ name: '', desc: '' });
+  const [newForm, setNewForm] = useState({ name: '', prompt: '' });
+  
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
 
-  const activeValidation = validations.find(v => v.id === activeValidationId) || validations[0];
+  // Synchronize existingForm with the selected validation
+  useEffect(() => {
+    const active = validations.find(v => v.id === activeValidationId);
+    if (active) {
+      setExistingForm({ name: active.name, desc: active.desc });
+    }
+  }, [activeValidationId, validations]);
 
-  const handleCreateNew = () => {
-    const newId = `v${Date.now()}`;
-    const newValidation = {
-      id: newId,
-      name: 'New Functionality',
-      desc: 'No description generated yet. Use the prompt box to define the functionality rules and AI will generate the validation logic.',
-      type: 'Custom API'
-    };
-    setValidations(prev => [...prev, newValidation]);
-    setActiveValidationId(newId);
-    setIsEditingName(true);
-  };
+  const handleSave = () => {
+    if (isSaveDisabled) return;
 
-  const handleRun = () => {
-    if (!prompt.trim()) return;
-    
-    setIsRunning(true);
-    // Simulate AI LLM delay
+    setIsSaving(true);
+    // Simulate API call/processing
     setTimeout(() => {
-      setValidations(prev => prev.map(v => {
-        if (v.id === activeValidationId) {
-          // If it's a completely new functionality, update title too based on prompt smartly
-          const isNew = v.name === 'New Functionality';
-          return {
-            ...v,
-            desc: `[Updated via Prompt]: ${prompt}\n\n${!isNew ? v.desc : ''}`
-          };
-        }
-        return v;
-      }));
-      setPrompt('');
-      setIsRunning(false);
-    }, 1200);
+      if (mode === 'existing') {
+        setValidations(prev => prev.map(v => 
+          v.id === activeValidationId 
+            ? { ...v, name: existingForm.name, desc: existingForm.desc } 
+            : v
+        ));
+      } else {
+        const newId = `v${Date.now()}`;
+        const newVal = {
+          id: newId,
+          name: newForm.name,
+          desc: newForm.prompt,
+          type: 'Custom API'
+        };
+        setValidations(prev => [...prev, newVal]);
+        setActiveValidationId(newId);
+        setMode('existing');
+        // Reset new form
+        setNewForm({ name: '', prompt: '' });
+      }
+      
+      setIsSaving(false);
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 2000);
+    }, 800);
   };
+
+  const isSaveDisabled = mode === 'existing' 
+    ? !existingForm.name.trim() || !existingForm.desc.trim()
+    : !newForm.name.trim() || !newForm.prompt.trim();
 
   return (
-    <div className="w-full h-full flex flex-col bg-slate-50/50 animate-in fade-in duration-500">
-      <div className="flex-1 flex gap-6 p-6 overflow-hidden">
+    <div className="w-full h-full flex flex-col bg-slate-50/40 p-4 md:p-8 animate-in fade-in duration-700">
+      <div className="max-w-4xl mx-auto w-full h-full flex flex-col">
         
-        {/* Left Panel: Prompt Input Box & Operations */}
-        <div className="w-[45%] h-full flex flex-col bg-white rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.06)] border border-slate-200/60 overflow-hidden relative z-10 flex-shrink-0">
-          <div className="px-5 py-4 border-b border-slate-100 flex items-center gap-3 bg-white shrink-0">
-             <div className="w-7 h-7 rounded-lg bg-blue-50 border border-blue-100 flex items-center justify-center shadow-sm">
-                 <Sparkles size={14} className="text-blue-600" />
-             </div>
-             <h2 className="text-[13px] font-black text-slate-800 tracking-tight flex-1">
-                Validation Prompt
-             </h2>
-          </div>
+        {/* Main Redesigned Container */}
+        <div className="flex-1 flex flex-col bg-white rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.04)] border border-slate-200/60 overflow-hidden">
           
-          <div className="p-6 flex-1 flex flex-col gap-5 overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-             
-             <div className="flex flex-col gap-4">
-                {/* Dropdown & Editable Name Cell */}
-                <div className="flex items-center gap-3">
-                   <div className="flex-1 relative group">
-                      <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-1.5 block ml-1">{isEditingName ? 'Name Functionality' : 'Select Functionality'}</label>
-                      {isEditingName ? (
-                         <input
-                            autoFocus
-                            type="text"
-                            value={activeValidation.name}
-                            onChange={(e) => setValidations(prev => prev.map(v => v.id === activeValidationId ? { ...v, name: e.target.value } : v))}
-                            onKeyDown={(e) => e.key === 'Enter' && setIsEditingName(false)}
-                            className="w-full bg-white text-[13px] font-bold text-blue-600 border border-blue-300 rounded-xl px-4 py-2.5 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all shadow-md"
-                            placeholder="Type name and press Enter..."
-                         />
-                      ) : (
-                         <>
-                            <select
-                               value={activeValidationId}
-                               onChange={(e) => setActiveValidationId(e.target.value)}
-                               className="w-full appearance-none bg-white text-[13px] font-semibold text-slate-700 border border-slate-200 rounded-xl px-4 py-2.5 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all cursor-pointer shadow-sm hover:border-slate-300"
-                            >
-                               {validations.map(v => (
-                                  <option key={v.id} value={v.id}>{v.name}</option>
-                               ))}
-                            </select>
-                            <ChevronDown className="absolute right-4 top-[32px] text-slate-400 pointer-events-none group-hover:text-slate-600 transition-colors" size={14} />
-                         </>
-                      )}
-                   </div>
-                   <div className="mt-5 shrink-0">
-                      {isEditingName ? (
-                         <button 
-                            onClick={() => setIsEditingName(false)}
-                            className="px-4 py-2.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-600 text-[12px] font-bold transition-all flex items-center gap-1.5 border border-emerald-200 shadow-sm"
-                         >
-                            <CheckCircle2 size={14} /> Save
-                         </button>
-                      ) : (
-                         <button 
-                            onClick={handleCreateNew}
-                            className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-[12px] font-bold transition-all flex items-center gap-1.5 border border-slate-200 shadow-sm"
-                         >
-                            <Plus size={14} className="text-blue-600" /> New
-                         </button>
-                      )}
-                   </div>
-                </div>
-
-             </div>
-
-             {/* Prompt Box */}
-             <div className="flex-1 flex flex-col">
-                <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-1.5 ml-1">AI Prompt Input</label>
-                <div className="flex-1 relative rounded-xl border border-slate-200 bg-slate-50/50 shadow-inner overflow-hidden focus-within:border-blue-500 focus-within:ring-4 focus-within:ring-blue-500/10 transition-all flex flex-col">
-                   <textarea 
-                     value={prompt}
-                     onChange={(e) => setPrompt(e.target.value)}
-                     className="w-full flex-1 bg-transparent px-4 py-4 text-[13px] leading-relaxed text-slate-700 outline-none resize-none placeholder:text-slate-400"
-                     placeholder="Type your validation changes or new logic here. Example: 'Modify this functionality to check for blank strings instead of just nulls...'"
-                   />
-                </div>
-             </div>
-
-             {/* Run Button */}
-             <div className="shrink-0 pt-2">
-                <button 
-                  onClick={handleRun}
-                  disabled={isRunning || !prompt.trim()}
-                  className={`w-full py-3 rounded-xl text-[13px] font-bold shadow-lg transition-all active:scale-[0.98] flex items-center justify-center gap-2 ${
-                     isRunning || !prompt.trim() 
-                     ? 'bg-slate-200 text-slate-400 shadow-none cursor-not-allowed border border-slate-200'
-                     : 'bg-blue-600 hover:bg-blue-700 text-white shadow-blue-500/20'
-                  }`}
-                >
-                   {isRunning ? <><Zap className="animate-pulse" size={14} /> Generating Changes...</> : <><Send size={14} /> Run Transformation</>}
-                </button>
-             </div>
-          </div>
-        </div>
-
-        {/* Right Panel: Framework Validation Info */}
-        <div className="w-[55%] h-full flex flex-col bg-white rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.06)] border border-slate-200/60 relative overflow-hidden flex-shrink-0">
-          
-          <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between shrink-0 bg-slate-50/50">
-             <div className="flex items-center gap-3">
-                <div className="flex gap-1.5">
-                   <div className="w-3 h-3 rounded-full bg-rose-400/80 shadow-[0_0_8px_rgba(244,63,94,0.2)]" />
-                   <div className="w-3 h-3 rounded-full bg-amber-400/80 shadow-[0_0_8px_rgba(245,158,11,0.2)]" />
-                   <div className="w-3 h-3 rounded-full bg-emerald-400/80 shadow-[0_0_8px_rgba(16,185,129,0.2)]" />
-                </div>
-                <h2 className="text-[13px] font-bold text-slate-700 ml-3 tracking-wide">Validation Output</h2>
-             </div>
-             <ShieldCheck size={16} className="text-blue-500/80" />
-          </div>
-
-          <div className="p-6 flex-1 flex flex-col gap-6 overflow-hidden z-10">
-            {/* Synchronized Dropdown */}
-            <div className="shrink-0 relative">
-               <label className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-2.5 ml-1 flex items-center gap-2">
-                  <ListChecks size={12} className="text-blue-500" />
-                  Active Functionality Context
-               </label>
-               <div className="relative group">
-                  <select
-                     value={activeValidationId}
-                     onChange={(e) => setActiveValidationId(e.target.value)}
-                     className="w-full appearance-none bg-white text-[13px] font-bold text-slate-800 border border-slate-200 rounded-xl px-4 py-3 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all cursor-pointer shadow-sm hover:border-slate-300"
-                  >
-                     {validations.map(v => (
-                        <option key={v.id} value={v.id}>{v.name}</option>
-                     ))}
-                  </select>
-                  <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none group-hover:text-slate-600 transition-colors" size={14} />
-               </div>
+          {/* Top Control Bar (Horizontal) */}
+          <div className="px-8 py-5 border-b border-slate-100 grid grid-cols-3 items-center bg-white/80 backdrop-blur-md sticky top-0 z-20">
+            
+            {/* Left: Existing Button */}
+            <div className="flex justify-start">
+              <button 
+                onClick={() => setMode('existing')}
+                className={`group relative flex items-center gap-2.5 px-5 py-2.5 rounded-xl text-[13px] font-bold transition-all duration-300 ${
+                  mode === 'existing' 
+                    ? 'bg-blue-50 text-blue-600 shadow-sm ring-1 ring-blue-100' 
+                    : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'
+                }`}
+              >
+                <ListChecks size={18} className={mode === 'existing' ? 'text-blue-600' : 'text-slate-400 group-hover:text-slate-500'} />
+                Existing
+                {mode === 'existing' && (
+                  <span className="absolute -bottom-[21px] left-1/2 -translate-x-1/2 w-12 h-1 bg-blue-600 rounded-t-full" />
+                )}
+              </button>
             </div>
 
-            {/* Validation Info Box */}
-            <div className="bg-slate-50 border border-slate-200 rounded-2xl p-6 shadow-sm flex flex-col">
-               <div className="space-y-6">
-                  <div>
-                     <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400 block mb-2 border-b border-slate-200 pb-2">Functionality Behavior & Description</span>
-                     <p className="text-[13px] leading-relaxed text-slate-700 whitespace-pre-wrap">{activeValidation.desc}</p>
+            {/* Center: New Button */}
+            <div className="flex justify-center">
+              <button 
+                onClick={() => setMode('new')}
+                className={`group relative flex items-center gap-2.5 px-5 py-2.5 rounded-xl text-[13px] font-bold transition-all duration-300 ${
+                  mode === 'new' 
+                    ? 'bg-blue-50 text-blue-600 shadow-sm ring-1 ring-blue-100' 
+                    : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'
+                }`}
+              >
+                <Plus size={18} className={mode === 'new' ? 'text-blue-600' : 'text-slate-400 group-hover:text-slate-500'} />
+                New
+                {mode === 'new' && (
+                  <span className="absolute -bottom-[21px] left-1/2 -translate-x-1/2 w-12 h-1 bg-blue-600 rounded-t-full" />
+                )}
+              </button>
+            </div>
+
+            {/* Right: Save Button */}
+            <div className="flex justify-end">
+              <button 
+                onClick={handleSave}
+                disabled={isSaveDisabled || isSaving}
+                className={`flex items-center gap-2.5 px-6 py-2.5 rounded-xl text-[13px] font-bold transition-all duration-300 shadow-lg ${
+                  saveSuccess 
+                    ? 'bg-emerald-500 text-white shadow-emerald-200' 
+                    : isSaveDisabled || isSaving
+                      ? 'bg-slate-100 text-slate-400 shadow-none cursor-not-allowed border border-slate-200'
+                      : 'bg-blue-600 hover:bg-blue-700 text-white shadow-blue-200 hover:-translate-y-0.5 active:translate-y-0 active:scale-95'
+                }`}
+              >
+                {saveSuccess ? (
+                  <><CheckCircle2 size={18} /> Saved!</>
+                ) : isSaving ? (
+                  <><Zap size={18} className="animate-pulse" /> Saving...</>
+                ) : (
+                  <><Save size={18} /> Save Changes</>
+                )}
+              </button>
+            </div>
+          </div>
+
+          {/* Content Area (Shared) */}
+          <div className="flex-1 overflow-y-auto p-8 md:p-12 custom-scrollbar">
+            <div className="max-w-2xl mx-auto">
+              
+              {mode === 'existing' ? (
+                <div key="existing-content" className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 fill-mode-both">
+                  
+                  {/* Selector for existing items */}
+                  <div className="space-y-3">
+                    <label className="flex items-center gap-2 text-[11px] font-black uppercase tracking-widest text-slate-400 ml-1">
+                      <Search size={12} className="text-blue-500" />
+                      Select Existing Functionality
+                    </label>
+                    <div className="relative group">
+                      <select
+                        value={activeValidationId}
+                        onChange={(e) => setActiveValidationId(e.target.value)}
+                        className="w-full appearance-none bg-slate-50/50 text-[14px] font-bold text-slate-700 border border-slate-200 rounded-2xl px-6 py-4 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 transition-all cursor-pointer hover:border-slate-300 shadow-sm"
+                      >
+                        {validations.map(v => (
+                          <option key={v.id} value={v.id}>{v.name}</option>
+                        ))}
+                      </select>
+                      <ChevronDown className="absolute right-6 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none group-hover:text-slate-600 transition-colors" size={20} />
+                    </div>
                   </div>
-               </div>
+
+                  <div className="h-px bg-gradient-to-r from-transparent via-slate-100 to-transparent" />
+
+                  {/* Fields */}
+                  <div className="space-y-6">
+                    <div className="space-y-3">
+                      <label className="flex items-center gap-2 text-[11px] font-black uppercase tracking-widest text-slate-400 ml-1">
+                        <FileText size={12} className="text-blue-500" />
+                        Title
+                      </label>
+                      <input 
+                        type="text"
+                        value={existingForm.name}
+                        onChange={(e) => setExistingForm({...existingForm, name: e.target.value})}
+                        className="w-full bg-white text-[15px] font-semibold text-slate-800 border border-slate-200 rounded-2xl px-6 py-4 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 transition-all shadow-sm placeholder:text-slate-300"
+                        placeholder="Validation Name"
+                      />
+                    </div>
+
+                    <div className="space-y-3">
+                      <label className="flex items-center gap-2 text-[11px] font-black uppercase tracking-widest text-slate-400 ml-1">
+                        <Activity size={12} className="text-blue-500" />
+                        Info / Description
+                      </label>
+                      <textarea 
+                        value={existingForm.desc}
+                        onChange={(e) => setExistingForm({...existingForm, desc: e.target.value})}
+                        className="w-full min-h-[220px] bg-white text-[14px] leading-relaxed text-slate-600 border border-slate-200 rounded-2xl px-6 py-5 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 transition-all shadow-sm resize-none placeholder:text-slate-300"
+                        placeholder="Define the behavior and logic rules for this validation..."
+                      />
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div key="new-content" className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 fill-mode-both">
+                  
+                  <div className="space-y-6">
+                    <div className="space-y-3">
+                      <label className="text-[11px] font-black uppercase tracking-widest text-slate-400 ml-1">Validation Name</label>
+                      <input 
+                        type="text"
+                        value={newForm.name}
+                        onChange={(e) => setNewForm({...newForm, name: e.target.value})}
+                        className="w-full bg-white text-[15px] font-semibold text-slate-800 border border-slate-200 rounded-2xl px-6 py-4 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 transition-all shadow-sm placeholder:text-slate-300"
+                        placeholder="e.g., Cross-Layer Consistency Check"
+                      />
+                    </div>
+
+                    <div className="space-y-3">
+                      <label className="text-[11px] font-black uppercase tracking-widest text-slate-400 ml-1">Validation Prompt</label>
+                      <textarea 
+                        value={newForm.prompt}
+                        onChange={(e) => setNewForm({...newForm, prompt: e.target.value})}
+                        className="w-full min-h-[220px] bg-white text-[14px] leading-relaxed text-slate-600 border border-slate-200 rounded-2xl px-6 py-5 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/5 transition-all shadow-sm resize-none placeholder:text-slate-300"
+                        placeholder="Describe the validation logic you want to implement... (e.g., 'Check if the total sum of amount in Silver matches Bronze layer within 0.01% tolerance')"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
+
+
+
         </div>
       </div>
+
+      <style dangerouslySetInnerHTML={{ __html: `
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 5px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: #e2e8f0;
+          border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: #cbd5e1;
+        }
+      `}} />
     </div>
   );
 }
